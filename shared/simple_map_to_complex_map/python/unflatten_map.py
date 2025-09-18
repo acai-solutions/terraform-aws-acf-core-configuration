@@ -53,9 +53,9 @@ def _parse_path(path: str, prefix: str, separator: str) -> List[str]:
     return [p for p in path.split(separator) if p]
 
 
-def _ensure_list_length(l: List[Any], idx: int) -> None:
-    while len(l) <= idx:
-        l.append(None)
+def _ensure_list_length(lst: List[Any], idx: int) -> None:
+    while len(lst) <= idx:
+        lst.append(None)
 
 
 def _set_value_at_path(
@@ -70,40 +70,36 @@ def _set_value_at_path(
         key_or_index = _index_number(part) if part_is_index else part
 
         if last:
-            if isinstance(here, list):
-                if not part_is_index:
-                    raise TypeError("Dict-style key inside list not allowed")
-                _ensure_list_length(here, key_or_index)
-                here[key_or_index] = value
-            elif isinstance(here, dict):
-                if part_is_index:
-                    raise TypeError("Index-style key inside dict not allowed")
-                here[key_or_index] = value
-            else:
-                raise TypeError("Invalid container type")
+            _assign_value(here, part_is_index, key_or_index, value)
         else:
             next_is_index = _is_index_segment(path_parts[i + 1])
+            here = _ensure_next_container(here, part_is_index, key_or_index, next_is_index)
 
-            if isinstance(here, dict):
-                if part not in here:
-                    here[part] = [] if next_is_index else {}
-                elif not isinstance(here[part], (list, dict)):
-                    # Replace scalar with dict or list
-                    # Optionally keep old scalar: here[part] = {"__value": here[part]}
-                    here[part] = [] if next_is_index else {}
-                here = here[part]
+def _assign_value(container, is_index, key, value):
+    if isinstance(container, list):
+        if not is_index:
+            raise TypeError("Dict-style key inside list not allowed")
+        _ensure_list_length(container, key)
+        container[key] = value
+    elif isinstance(container, dict):
+        if is_index:
+            raise TypeError("Index-style key inside dict not allowed")
+        container[key] = value
+    else:
+        raise TypeError("Invalid container type")
 
-            elif isinstance(here, list):
-                idx = key_or_index
-                _ensure_list_length(here, idx)
-                if here[idx] is None:
-                    here[idx] = [] if next_is_index else {}
-                elif not isinstance(here[idx], (list, dict)):
-                    here[idx] = [] if next_is_index else {}
-                here = here[idx]
-
-            else:
-                raise TypeError("Invalid intermediate container")
+def _ensure_next_container(container, is_index, key, next_is_index):
+    if isinstance(container, dict):
+        if key not in container or not isinstance(container[key], (list, dict)):
+            container[key] = [] if next_is_index else {}
+        return container[key]
+    elif isinstance(container, list):
+        _ensure_list_length(container, key)
+        if container[key] is None or not isinstance(container[key], (list, dict)):
+            container[key] = [] if next_is_index else {}
+        return container[key]
+    else:
+        raise TypeError("Invalid intermediate container")
 
 
 # ─────────────────────────────────── core ─────────────────────────────────────

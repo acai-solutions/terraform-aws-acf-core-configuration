@@ -100,45 +100,57 @@ def write_or_update_parameters(ssm, param_map, tags, overwrite, cluster_id, kms_
             sys.exit(1)
 
 
+def _get_parameters_by_prefix(ssm, prefix):
+    paginator = ssm.get_paginator("describe_parameters")
+    return paginator.paginate(ParameterFilters=[{
+        "Key": "Name", "Option": "BeginsWith", "Values": [prefix]
+    }])
+
+
+def _get_cluster_managed_parameters(ssm, pages, cluster_id):
+    managed = set()
+    for page in pages:
+        for param in page["Parameters"]:
+            name = param["Name"]
+            try:
+                tags_response = ssm.list_tags_for_resource(ResourceType="Parameter", ResourceId=name)
+                tags = {tag["Key"]: tag["Value"] for tag in tags_response.get("TagList", [])}
+                if tags.get(CLUSTER_ID_TAG) == cluster_id:
+                    managed.add(name)
+                    print(f"Found parameter managed by this cluster: {name}")
+            except ClientError as e:
+                if e.response["Error"]["Code"] == "ParameterNotFound":
+                    print(f"Parameter {name} was deleted during processing, skipping...")
+                else:
+                    print(f"Error checking tags for {name}: {e}")
+            except Exception as e:
+                print(f"Unexpected error checking tags for {name}: {e}")
+    return managed
+
+
+def _delete_parameters_in_batches(ssm, obsolete):
+    for i in range(0, len(obsolete), 10):
+        batch = list(obsolete)[i:i + 10]
+        try:
+            ssm.delete_parameters(Names=batch)
+            print(f"Successfully deleted batch: {batch}")
+        except Exception as e:
+            print(f"Error deleting batch {batch}: {e}")
+
+
 def cleanup_obsolete_parameters(ssm, cluster_id, prefix, current_keys):
     print(f"\nSearching for obsolete parameters with cluster ID: {cluster_id} and prefix: {prefix}")
     try:
-        paginator = ssm.get_paginator("describe_parameters")
-        pages = paginator.paginate(ParameterFilters=[{
-            "Key": "Name", "Option": "BeginsWith", "Values": [prefix]
-        }])
-
-        managed_by_cluster = set()
-        for page in pages:
-            for param in page["Parameters"]:
-                name = param["Name"]
-                try:
-                    tags_response = ssm.list_tags_for_resource(ResourceType="Parameter", ResourceId=name)
-                    tags = {tag["Key"]: tag["Value"] for tag in tags_response.get("TagList", [])}
-                    if tags.get(CLUSTER_ID_TAG) == cluster_id:
-                        managed_by_cluster.add(name)
-                        print(f"Found parameter managed by this cluster: {name}")
-                except ClientError as e:
-                    if e.response["Error"]["Code"] == "ParameterNotFound":
-                        print(f"Parameter {name} was deleted during processing, skipping...")
-                    else:
-                        print(f"Error checking tags for {name}: {e}")
-                except Exception as e:
-                    print(f"Unexpected error checking tags for {name}: {e}")
-
+        pages = _get_parameters_by_prefix(ssm, prefix)
+        managed_by_cluster = _get_cluster_managed_parameters(ssm, pages, cluster_id)
         obsolete = managed_by_cluster - set(current_keys)
+
         if not obsolete:
             print("No obsolete parameters found.")
             return
 
         print(f"Found {len(obsolete)} obsolete parameters to delete: {obsolete}")
-        for i in range(0, len(obsolete), 10):
-            batch = list(obsolete)[i:i + 10]
-            try:
-                ssm.delete_parameters(Names=batch)
-                print(f"Successfully deleted batch: {batch}")
-            except Exception as e:
-                print(f"Error deleting batch {batch}: {e}")
+        _delete_parameters_in_batches(ssm, obsolete)
 
     except Exception as e:
         print(f"Error during cleanup of obsolete parameters: {e}")
