@@ -13,6 +13,7 @@ For commercial licensing, contact: contact@acai.gmbh
 
 import json
 import sys
+
 import boto3
 from botocore.config import Config
 

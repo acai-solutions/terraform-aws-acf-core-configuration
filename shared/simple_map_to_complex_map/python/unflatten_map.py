@@ -19,10 +19,10 @@ Usage:
   python unflatten_map.py structure.json               # whole file, raw output
 """
 
+import argparse
 import json
 import re
 import sys
-import argparse
 import urllib.parse
 from typing import Any, Dict, List, Union
 
