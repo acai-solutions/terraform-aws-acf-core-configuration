@@ -15,7 +15,6 @@ For commercial licensing, contact: contact@acai.gmbh
 import json
 import sys
 import urllib.parse
-import re
 
 def needs_encoding(value):
     """Check if a value needs URL encoding."""

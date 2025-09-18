@@ -16,7 +16,6 @@ import json
 import boto3
 import sys
 from botocore.config import Config
-from botocore.exceptions import ClientError
 
 def assume_role(role_arn, region):
     sts = boto3.client('sts', region_name=region)
