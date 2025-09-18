@@ -26,12 +26,19 @@ import json, sys, re, urllib.parse
 from typing import Any, Dict, List, Union
 import re
 
+
 # ─────────────────────────────────── helpers ──────────────────────────────────
 def _looks_urlencoded(s: str) -> bool:
     return "%" in s and bool(re.search(r"%[0-9A-Fa-f]{2}", s))
 
+
 def _maybe_decode(v: Any, decode: bool) -> Any:
-    return urllib.parse.unquote(v) if decode and isinstance(v, str) and _looks_urlencoded(v) else v
+    return (
+        urllib.parse.unquote(v)
+        if decode and isinstance(v, str) and _looks_urlencoded(v)
+        else v
+    )
+
 
 def _upgrade_slot(container: Union[list, dict], key: Union[int, str]) -> dict:
     """
@@ -46,15 +53,19 @@ def _upgrade_slot(container: Union[list, dict], key: Union[int, str]) -> dict:
         container[key] = {}
     return container[key]
 
-_index_re = re.compile(r"^_(\d+)_$")          #  ⇠  ➜  matches "_0_", "_12_", …
+
+_index_re = re.compile(r"^_(\d+)_$")  #  ⇠  ➜  matches "_0_", "_12_", …
+
 
 def _is_index_segment(seg: str) -> bool:
     """Return True if seg is like '_0_' and therefore marks a list index."""
     return bool(_index_re.match(seg))
 
+
 def _index_number(seg: str) -> int:
     """Extract the integer  n  from '_n_'  (assumes caller already checked)."""
     return int(_index_re.match(seg).group(1))
+
 
 # ─────────────────────────────────── core ─────────────────────────────────────
 def unflatten_map(
@@ -77,12 +88,12 @@ def unflatten_map(
     for raw_key, value in flat.items():
         if prefix and not raw_key.startswith(prefix):
             continue
-        path = raw_key[len(prefix):].lstrip(separator) if prefix else raw_key
+        path = raw_key[len(prefix) :].lstrip(separator) if prefix else raw_key
         parts = [p for p in path.split(separator) if p]
 
         here: Union[Dict[str, Any], List[Any]] = root
         for i, part in enumerate(parts):
-            last          = i == len(parts) - 1
+            last = i == len(parts) - 1
             part_is_index = _is_index_segment(part)
 
             if last:
@@ -119,27 +130,26 @@ def main():
     if len(sys.argv) < 2:
         print(json.dumps({"error": "Missing required input argument"}))
         sys.exit(1)
-    
+
     try:
         input_text = sys.argv[1]
-        prefix = sys.argv[2] if len(sys.argv) > 2 else ''
-        decode_values = sys.argv[3].lower() == 'true' if len(sys.argv) > 3 else False
-        
+        prefix = sys.argv[2] if len(sys.argv) > 2 else ""
+        decode_values = sys.argv[3].lower() == "true" if len(sys.argv) > 3 else False
+
         input_map = json.loads(input_text)
         unflattened_configuration_items = unflatten_map(
-            input_map, 
-            prefix=prefix,
-            decode_values=decode_values
+            input_map, prefix=prefix, decode_values=decode_values
         )
-        
+
         print(json.dumps({"result": json.dumps(unflattened_configuration_items)}))
-        
+
     except json.JSONDecodeError as e:
         print(json.dumps({"error": f"Invalid JSON input: {str(e)}"}))
         sys.exit(1)
     except Exception as e:
         print(json.dumps({"error": f"Processing error: {str(e)}"}))
         sys.exit(1)
+
 
 if __name__ == "__main__":
     main()
