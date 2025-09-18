@@ -114,9 +114,9 @@ def write_or_update_parameters(ssm, param_map, tags, overwrite, cluster_id, kms_
 
 def _get_parameters_by_prefix(ssm, prefix):
     paginator = ssm.get_paginator("describe_parameters")
-    return paginator.paginate(ParameterFilters=[{
-        "Key": "Name", "Option": "BeginsWith", "Values": [prefix]
-    }])
+    return paginator.paginate(
+        ParameterFilters=[{"Key": "Name", "Option": "BeginsWith", "Values": [prefix]}]
+    )
 
 
 def _get_cluster_managed_parameters(ssm, pages, cluster_id):
@@ -125,14 +125,20 @@ def _get_cluster_managed_parameters(ssm, pages, cluster_id):
         for param in page["Parameters"]:
             name = param["Name"]
             try:
-                tags_response = ssm.list_tags_for_resource(ResourceType="Parameter", ResourceId=name)
-                tags = {tag["Key"]: tag["Value"] for tag in tags_response.get("TagList", [])}
+                tags_response = ssm.list_tags_for_resource(
+                    ResourceType="Parameter", ResourceId=name
+                )
+                tags = {
+                    tag["Key"]: tag["Value"] for tag in tags_response.get("TagList", [])
+                }
                 if tags.get(CLUSTER_ID_TAG) == cluster_id:
                     managed.add(name)
                     print(f"Found parameter managed by this cluster: {name}")
             except ClientError as e:
                 if e.response["Error"]["Code"] == "ParameterNotFound":
-                    print(f"Parameter {name} was deleted during processing, skipping...")
+                    print(
+                        f"Parameter {name} was deleted during processing, skipping..."
+                    )
                 else:
                     print(f"Error checking tags for {name}: {e}")
             except Exception as e:
@@ -142,7 +148,7 @@ def _get_cluster_managed_parameters(ssm, pages, cluster_id):
 
 def _delete_parameters_in_batches(ssm, obsolete):
     for i in range(0, len(obsolete), 10):
-        batch = list(obsolete)[i:i + 10]
+        batch = list(obsolete)[i : i + 10]
         try:
             ssm.delete_parameters(Names=batch)
             print(f"Successfully deleted batch: {batch}")

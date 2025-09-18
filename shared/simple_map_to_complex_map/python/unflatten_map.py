@@ -75,7 +75,10 @@ def _set_value_at_path(
             _assign_value(here, part_is_index, key_or_index, value)
         else:
             next_is_index = _is_index_segment(path_parts[i + 1])
-            here = _ensure_next_container(here, part_is_index, key_or_index, next_is_index)
+            here = _ensure_next_container(
+                here, part_is_index, key_or_index, next_is_index
+            )
+
 
 def _assign_value(container, is_index, key, value):
     if isinstance(container, list):
@@ -89,6 +92,7 @@ def _assign_value(container, is_index, key, value):
         container[key] = value
     else:
         raise TypeError("Invalid container type")
+
 
 def _ensure_next_container(container, is_index, key, next_is_index):
     if isinstance(container, dict):
