@@ -21,10 +21,10 @@ Usage:
 
 import argparse
 import json
+import os
 import re
 import sys
 import urllib.parse
-import os
 from typing import Any, Dict, List, Union
 
 # ─────────────────────────────────── helpers ──────────────────────────────────
