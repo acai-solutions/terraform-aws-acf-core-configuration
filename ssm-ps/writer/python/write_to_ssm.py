@@ -13,10 +13,11 @@ For commercial licensing, contact: contact@acai.gmbh
 """
 
 import argparse
-import json
-import boto3
-import sys
 import base64
+import json
+import sys
+
+import boto3
 from botocore.config import Config
 from botocore.exceptions import ClientError
 

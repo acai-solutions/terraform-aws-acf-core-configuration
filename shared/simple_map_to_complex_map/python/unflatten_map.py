@@ -22,9 +22,11 @@ Examples
   cat structure.json | python unflatten.py - /platform --decode --pretty
   python unflatten.py structure.json               # whole file, raw output
 """
-import json, sys, re, urllib.parse
-from typing import Any, Dict, List, Union
+import json
 import re
+import sys
+import urllib.parse
+from typing import Any, Dict, List, Union
 
 
 # ─────────────────────────────────── helpers ──────────────────────────────────
