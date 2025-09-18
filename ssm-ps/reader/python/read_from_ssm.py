@@ -1,20 +1,18 @@
+#!/usr/bin/env python3
 """
 ACAI Cloud Foundation (ACF)
 Copyright (C) 2025 ACAI GmbH
 Licensed under AGPL v3
-#
+
 This file is part of ACAI ACF.
 Visit https://www.acai.gmbh or https://docs.acai.gmbh for more information.
 
 For full license text, see LICENSE file in repository root.
 For commercial licensing, contact: contact@acai.gmbh
-
-
 """
 
 import json
 import sys
-
 import boto3
 from botocore.config import Config
 
@@ -30,13 +28,40 @@ def assume_role(role_arn, region):
     )
 
 
-def main():
-    # Read query from stdin (external data source format)
+def read_query_from_stdin() -> dict:
+    """Read and parse JSON input from stdin."""
     try:
-        query = json.loads(sys.stdin.read())
+        if sys.stdin.isatty():
+            print("Error: Expected JSON input via stdin.", file=sys.stderr)
+            sys.exit(1)
+
+        data = sys.stdin.read()
+        return json.loads(data)
+
     except json.JSONDecodeError:
         print("Error: Invalid JSON received on stdin.", file=sys.stderr)
         sys.exit(1)
+
+
+def fetch_parameters(ssm, prefix: str) -> dict:
+    """Retrieve all parameters under the given prefix, decrypted."""
+    paginator = ssm.get_paginator("get_parameters_by_path")
+    pages = paginator.paginate(
+        Path=prefix,
+        Recursive=True,
+        WithDecryption=True,
+    )
+
+    flat_configuration = {}
+    for page in pages:
+        for param in page["Parameters"]:
+            flat_configuration[param["Name"]] = param["Value"]
+
+    return flat_configuration
+
+
+def main():
+    query = read_query_from_stdin()
 
     parameter_name_prefix = query.get("parameter_name_prefix")
     role_arn = query.get("role_arn")
@@ -52,23 +77,14 @@ def main():
     try:
         creds = assume_role(role_arn, aws_region)
         boto_config = Config(
-            region_name=aws_region, retries={"max_attempts": 5, "mode": "standard"}
+            region_name=aws_region,
+            retries={"max_attempts": 5, "mode": "standard"},
         )
         ssm = boto3.client("ssm", config=boto_config, **creds)
 
-        # Get all parameters under the specified path
-        paginator = ssm.get_paginator("get_parameters_by_path")
-        pages = paginator.paginate(
-            Path=parameter_name_prefix, Recursive=True, WithDecryption=True
-        )
+        flat_configuration = fetch_parameters(ssm, parameter_name_prefix)
 
-        flat_configuration = {}
-        for page in pages:
-            for param in page["Parameters"]:
-                flat_configuration[param["Name"]] = param["Value"]
-
-        # Output result in external data source format (JSON to stdout)
-        print(json.dumps(flat_configuration))
+        print(json.dumps(flat_configuration, sort_keys=True))  # Sorted for deterministic output
 
     except Exception as e:
         print(f"Error reading from SSM: {e}", file=sys.stderr)

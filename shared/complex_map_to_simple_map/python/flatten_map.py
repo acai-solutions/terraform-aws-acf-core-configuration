@@ -13,7 +13,6 @@ For commercial licensing, contact: contact@acai.gmbh
 """
 
 import json
-import re
 import sys
 import urllib.parse
 
