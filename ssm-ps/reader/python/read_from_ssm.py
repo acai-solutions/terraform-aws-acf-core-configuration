@@ -13,6 +13,7 @@ For commercial licensing, contact: contact@acai.gmbh
 
 import json
 import sys
+
 import boto3
 from botocore.config import Config
 
@@ -84,7 +85,9 @@ def main():
 
         flat_configuration = fetch_parameters(ssm, parameter_name_prefix)
 
-        print(json.dumps(flat_configuration, sort_keys=True))  # Sorted for deterministic output
+        print(
+            json.dumps(flat_configuration, sort_keys=True)
+        )  # Sorted for deterministic output
 
     except Exception as e:
         print(f"Error reading from SSM: {e}", file=sys.stderr)

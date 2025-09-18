@@ -19,10 +19,10 @@ Usage:
   python unflatten_map.py structure.json               # whole file, raw output
 """
 
+import argparse
 import json
 import re
 import sys
-import argparse
 import urllib.parse
 from typing import Any, Dict, List, Union
 
@@ -36,7 +36,11 @@ def _looks_urlencoded(s: str) -> bool:
 
 
 def _maybe_decode(v: Any, decode: bool) -> Any:
-    return urllib.parse.unquote(v) if decode and isinstance(v, str) and _looks_urlencoded(v) else v
+    return (
+        urllib.parse.unquote(v)
+        if decode and isinstance(v, str) and _looks_urlencoded(v)
+        else v
+    )
 
 
 def _is_index_segment(seg: str) -> bool:
@@ -49,7 +53,7 @@ def _index_number(seg: str) -> int:
 
 def _parse_path(path: str, prefix: str, separator: str) -> List[str]:
     if prefix and path.startswith(prefix):
-        path = path[len(prefix):].lstrip(separator)
+        path = path[len(prefix) :].lstrip(separator)
     return [p for p in path.split(separator) if p]
 
 
@@ -59,9 +63,7 @@ def _ensure_list_length(lst: List[Any], idx: int) -> None:
 
 
 def _set_value_at_path(
-    root: Union[Dict[str, Any], List[Any]],
-    path_parts: List[str],
-    value: Any
+    root: Union[Dict[str, Any], List[Any]], path_parts: List[str], value: Any
 ) -> None:
     here = root
     for i, part in enumerate(path_parts):
@@ -104,6 +106,7 @@ def _ensure_next_container(container, is_index, key, next_is_index):
 
 # ─────────────────────────────────── core ─────────────────────────────────────
 
+
 def unflatten_map(
     flat: Dict[str, Any],
     *,
@@ -127,13 +130,21 @@ def unflatten_map(
 
     return root
 
+
 # ─────────────────────────────────── cli ──────────────────────────────────────
 
+
 def parse_args():
-    parser = argparse.ArgumentParser(description="Convert flattened JSON to nested format")
+    parser = argparse.ArgumentParser(
+        description="Convert flattened JSON to nested format"
+    )
     parser.add_argument("input", help="JSON string or path to file")
-    parser.add_argument("--prefix", default="", help="Path prefix to trim before processing")
-    parser.add_argument("--decode", action="store_true", help="Decode URL-encoded strings")
+    parser.add_argument(
+        "--prefix", default="", help="Path prefix to trim before processing"
+    )
+    parser.add_argument(
+        "--decode", action="store_true", help="Decode URL-encoded strings"
+    )
     parser.add_argument("--pretty", action="store_true", help="Pretty-print the output")
     return parser.parse_args()
 

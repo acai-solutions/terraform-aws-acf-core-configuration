@@ -35,19 +35,27 @@ def assume_role(role_arn, region=None):
 
 def get_ssm_client(role_arn: str, region: str):
     creds = assume_role(role_arn, region)
-    boto_config = Config(region_name=region, retries={"max_attempts": 5, "mode": "standard"})
+    boto_config = Config(
+        region_name=region, retries={"max_attempts": 5, "mode": "standard"}
+    )
     return boto3.client("ssm", region_name=region, config=boto_config, **creds)
 
 
 def find_parameters_to_delete(ssm, prefix: str, cluster_id: str) -> list[str]:
-    print(f"Searching for SSM parameters with tag {CLUSTER_ID_TAG}={cluster_id} and prefix {prefix}...")
+    print(
+        f"Searching for SSM parameters with tag {CLUSTER_ID_TAG}={cluster_id} and prefix {prefix}..."
+    )
 
     paginator = ssm.get_paginator("describe_parameters")
-    pages = paginator.paginate(ParameterFilters=[{
-        "Key": "Name",
-        "Option": "BeginsWith",
-        "Values": [prefix],
-    }])
+    pages = paginator.paginate(
+        ParameterFilters=[
+            {
+                "Key": "Name",
+                "Option": "BeginsWith",
+                "Values": [prefix],
+            }
+        ]
+    )
 
     to_delete = []
     for page in pages:
@@ -61,7 +69,9 @@ def find_parameters_to_delete(ssm, prefix: str, cluster_id: str) -> list[str]:
 
 def has_matching_cluster_tag(ssm, param_name: str, cluster_id: str) -> bool:
     try:
-        tags_response = ssm.list_tags_for_resource(ResourceType="Parameter", ResourceId=param_name)
+        tags_response = ssm.list_tags_for_resource(
+            ResourceType="Parameter", ResourceId=param_name
+        )
         tags = {tag["Key"]: tag["Value"] for tag in tags_response.get("TagList", [])}
         return tags.get(CLUSTER_ID_TAG) == cluster_id
     except ClientError as e:
@@ -74,7 +84,7 @@ def has_matching_cluster_tag(ssm, param_name: str, cluster_id: str) -> bool:
 def delete_parameters(ssm, parameters: list[str]) -> None:
     print(f"Deleting {len(parameters)} parameters...")
     for i in range(0, len(parameters), 10):
-        batch = parameters[i:i + 10]
+        batch = parameters[i : i + 10]
         try:
             ssm.delete_parameters(Names=batch)
             print(f"Successfully deleted parameters: {batch}")
@@ -102,7 +112,9 @@ def main():
 
     try:
         ssm = get_ssm_client(args.role_arn, region)
-        parameters = find_parameters_to_delete(ssm, args.parameter_name_prefix, args.cluster_id)
+        parameters = find_parameters_to_delete(
+            ssm, args.parameter_name_prefix, args.cluster_id
+        )
 
         if not parameters:
             print("No parameters found to delete.")
