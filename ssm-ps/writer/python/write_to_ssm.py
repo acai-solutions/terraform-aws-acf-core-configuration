@@ -48,8 +48,12 @@ def get_parameter_details(ssm, name):
     try:
         response = ssm.get_parameter(Name=name, WithDecryption=False)
         try:
-            tags_response = ssm.list_tags_for_resource(ResourceType="Parameter", ResourceId=name)
-            tags = {tag["Key"]: tag["Value"] for tag in tags_response.get("TagList", [])}
+            tags_response = ssm.list_tags_for_resource(
+                ResourceType="Parameter", ResourceId=name
+            )
+            tags = {
+                tag["Key"]: tag["Value"] for tag in tags_response.get("TagList", [])
+            }
         except ClientError as e:
             print(f"Warning: Could not retrieve tags for parameter {name}: {e}")
             tags = {}
@@ -66,7 +70,11 @@ def write_or_update_parameters(ssm, param_map, tags, overwrite, cluster_id, kms_
             parameter, existing_tags = get_parameter_details(ssm, name)
             existing_cluster_id = existing_tags.get(CLUSTER_ID_TAG)
 
-            if not overwrite and existing_cluster_id and existing_cluster_id != cluster_id:
+            if (
+                not overwrite
+                and existing_cluster_id
+                and existing_cluster_id != cluster_id
+            ):
                 print(
                     f"Error: Parameter {name} exists and is managed by cluster {existing_cluster_id}, not {cluster_id}."
                 )
@@ -92,8 +100,12 @@ def write_or_update_parameters(ssm, param_map, tags, overwrite, cluster_id, kms_
                     # Remove old tags first
                     old_keys = list(existing_tags.keys())
                     if old_keys:
-                        ssm.remove_tags_from_resource(ResourceType="Parameter", ResourceId=name, TagKeys=old_keys)
-                    ssm.add_tags_to_resource(ResourceType="Parameter", ResourceId=name, Tags=tags)
+                        ssm.remove_tags_from_resource(
+                            ResourceType="Parameter", ResourceId=name, TagKeys=old_keys
+                        )
+                    ssm.add_tags_to_resource(
+                        ResourceType="Parameter", ResourceId=name, Tags=tags
+                    )
                     print(f"Replaced tags for {name}.")
         except Exception as e:
             print(f"Error processing parameter {name}: {e}")
@@ -101,26 +113,37 @@ def write_or_update_parameters(ssm, param_map, tags, overwrite, cluster_id, kms_
 
 
 def cleanup_obsolete_parameters(ssm, cluster_id, prefix, current_keys):
-    print(f"\nSearching for obsolete parameters with cluster ID: {cluster_id} and prefix: {prefix}")
+    print(
+        f"\nSearching for obsolete parameters with cluster ID: {cluster_id} and prefix: {prefix}"
+    )
     try:
         paginator = ssm.get_paginator("describe_parameters")
-        pages = paginator.paginate(ParameterFilters=[{
-            "Key": "Name", "Option": "BeginsWith", "Values": [prefix]
-        }])
+        pages = paginator.paginate(
+            ParameterFilters=[
+                {"Key": "Name", "Option": "BeginsWith", "Values": [prefix]}
+            ]
+        )
 
         managed_by_cluster = set()
         for page in pages:
             for param in page["Parameters"]:
                 name = param["Name"]
                 try:
-                    tags_response = ssm.list_tags_for_resource(ResourceType="Parameter", ResourceId=name)
-                    tags = {tag["Key"]: tag["Value"] for tag in tags_response.get("TagList", [])}
+                    tags_response = ssm.list_tags_for_resource(
+                        ResourceType="Parameter", ResourceId=name
+                    )
+                    tags = {
+                        tag["Key"]: tag["Value"]
+                        for tag in tags_response.get("TagList", [])
+                    }
                     if tags.get(CLUSTER_ID_TAG) == cluster_id:
                         managed_by_cluster.add(name)
                         print(f"Found parameter managed by this cluster: {name}")
                 except ClientError as e:
                     if e.response["Error"]["Code"] == "ParameterNotFound":
-                        print(f"Parameter {name} was deleted during processing, skipping...")
+                        print(
+                            f"Parameter {name} was deleted during processing, skipping..."
+                        )
                     else:
                         print(f"Error checking tags for {name}: {e}")
                 except Exception as e:
@@ -133,7 +156,7 @@ def cleanup_obsolete_parameters(ssm, cluster_id, prefix, current_keys):
 
         print(f"Found {len(obsolete)} obsolete parameters to delete: {obsolete}")
         for i in range(0, len(obsolete), 10):
-            batch = list(obsolete)[i:i + 10]
+            batch = list(obsolete)[i : i + 10]
             try:
                 ssm.delete_parameters(Names=batch)
                 print(f"Successfully deleted batch: {batch}")
@@ -171,8 +194,12 @@ def main():
     boto_config = Config(retries={"max_attempts": 5, "mode": "standard"})
     ssm = boto3.client("ssm", config=boto_config, **creds)
 
-    write_or_update_parameters(ssm, param_map, tags, overwrite, args.cluster_id, args.kms_key_id)
-    cleanup_obsolete_parameters(ssm, args.cluster_id, args.parameter_name_prefix, param_map.keys())
+    write_or_update_parameters(
+        ssm, param_map, tags, overwrite, args.cluster_id, args.kms_key_id
+    )
+    cleanup_obsolete_parameters(
+        ssm, args.cluster_id, args.parameter_name_prefix, param_map.keys()
+    )
 
 
 if __name__ == "__main__":
