@@ -17,9 +17,16 @@ terraform {
 }
 
 data "external" "unflatten_configuration" {
-  program = ["python3", "${path.module}/python/unflatten_map.py", jsonencode(var.flat_configuration), var.prefix]
+  program = [
+    "python",
+    "${path.module}/python/unflatten_map.py",
+    jsonencode(var.flat_configuration),
+    var.prefix,
+    "--wrap-external"
+  ]
 }
 
 locals {
+  # Nested structure produced by unflatten_map.py
   unflattened_configuration = jsondecode(data.external.unflatten_configuration.result["result"])
 }

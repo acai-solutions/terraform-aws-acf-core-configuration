@@ -24,6 +24,7 @@ import json
 import re
 import sys
 import urllib.parse
+import os
 from typing import Any, Dict, List, Union
 
 # ─────────────────────────────────── helpers ──────────────────────────────────
@@ -144,26 +145,43 @@ def parse_args():
     )
     parser.add_argument("input", help="JSON string or path to file")
     parser.add_argument(
+        "prefix_positional",
+        nargs="?",
+        default=None,
+        help="(Optional) path prefix to trim (positional form)"
+    )
+    parser.add_argument(
         "--prefix", default="", help="Path prefix to trim before processing"
     )
     parser.add_argument(
         "--decode", action="store_true", help="Decode URL-encoded strings"
     )
     parser.add_argument("--pretty", action="store_true", help="Pretty-print the output")
+    parser.add_argument(
+        "--wrap-external",
+        action="store_true",
+        help="Wrap output for Terraform external data source as {'result': '<json string>'}"
+    )
     return parser.parse_args()
 
 
 def main():
     args = parse_args()
+    # Determine final prefix (positional overrides if provided)
+    effective_prefix = args.prefix_positional if args.prefix_positional is not None else args.prefix
 
     # Load input JSON
     try:
         if args.input == "-":
             input_text = sys.stdin.read()
-        else:
+            input_map = json.loads(input_text)
+        elif os.path.exists(args.input):
             with open(args.input, "r", encoding="utf-8") as f:
                 input_text = f.read()
-        input_map = json.loads(input_text)
+            input_map = json.loads(input_text)
+        else:
+            # Treat as inline JSON string
+            input_map = json.loads(args.input)
     except Exception as e:
         print(json.dumps({"error": f"Invalid input: {str(e)}"}), file=sys.stderr)
         sys.exit(1)
@@ -172,10 +190,15 @@ def main():
     try:
         result = unflatten_map(
             input_map,
-            prefix=args.prefix,
+            prefix=effective_prefix,
             decode_values=args.decode,
         )
-        print(json.dumps(result, indent=2 if args.pretty else None))
+        if args.wrap_external:
+            # Compact JSON for embedding
+            nested_json = json.dumps(result, separators=(",", ":"))
+            print(json.dumps({"result": nested_json}))
+        else:
+            print(json.dumps(result, indent=2 if args.pretty else None))
     except Exception as e:
         print(json.dumps({"error": f"Processing error: {str(e)}"}), file=sys.stderr)
         sys.exit(1)

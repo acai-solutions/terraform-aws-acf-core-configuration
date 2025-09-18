@@ -17,7 +17,7 @@ terraform {
 }
 
 data "external" "flatten_configuration_add_on" {
-  program = ["python3", "${path.module}/python/flatten_map.py", jsonencode(var.configuration_add_on), var.prefix]
+  program = ["python", "${path.module}/python/flatten_map.py", jsonencode(var.configuration_add_on), var.prefix]
 }
 
 locals {
