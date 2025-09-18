@@ -17,6 +17,7 @@ import re
 import sys
 import urllib.parse
 
+
 def needs_encoding(value):
     """Check if a value needs URL encoding."""
     if not isinstance(value, str):
