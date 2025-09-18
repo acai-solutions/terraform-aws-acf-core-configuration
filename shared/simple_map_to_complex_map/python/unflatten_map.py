@@ -148,7 +148,7 @@ def parse_args():
         "prefix_positional",
         nargs="?",
         default=None,
-        help="(Optional) path prefix to trim (positional form)"
+        help="(Optional) path prefix to trim (positional form)",
     )
     parser.add_argument(
         "--prefix", default="", help="Path prefix to trim before processing"
@@ -160,7 +160,7 @@ def parse_args():
     parser.add_argument(
         "--wrap-external",
         action="store_true",
-        help="Wrap output for Terraform external data source as {'result': '<json string>'}"
+        help="Wrap output for Terraform external data source as {'result': '<json string>'}",
     )
     return parser.parse_args()
 
@@ -168,7 +168,9 @@ def parse_args():
 def main():
     args = parse_args()
     # Determine final prefix (positional overrides if provided)
-    effective_prefix = args.prefix_positional if args.prefix_positional is not None else args.prefix
+    effective_prefix = (
+        args.prefix_positional if args.prefix_positional is not None else args.prefix
+    )
 
     # Load input JSON
     try:
