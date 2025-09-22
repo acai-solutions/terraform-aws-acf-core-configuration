@@ -63,41 +63,41 @@ def _ensure_container(parent: NestedType, key: str, next_is_index: bool) -> Nest
 
 
 
+def _place_value(container: NestedType, key: str, val: Any):
+    if key.isdigit():
+        idx = int(key)
+        if not isinstance(container, list):
+            raise ValueError("Expected list for numeric key assignment")
+        while len(container) <= idx:
+            container.append(None)
+        container[idx] = val
+    else:
+        if not isinstance(container, dict):
+            raise ValueError("Expected dict for non-numeric key assignment")
+        container[key] = val
+
+def _get_or_create_child(
+    container: NestedType, key: str, next_is_index: bool
+) -> NestedType:
+    if key.isdigit():
+        idx = int(key)
+        if not isinstance(container, list):
+            raise ValueError("Expected list for numeric key path")
+        while len(container) <= idx:
+            container.append([] if next_is_index else {})
+        if container[idx] is None:
+            container[idx] = [] if next_is_index else {}
+        return container[idx]
+    else:
+        if not isinstance(container, dict):
+            raise ValueError("Expected dict for non-numeric key path")
+        return _ensure_container(container, key, next_is_index)
+
+
 def _assign(
     root: NestedType, parts: Sequence[str], value: Any, decode_values: bool
-): # noqa: C901
+):
     """Recursively assign value into the nested structure based on parts."""
-
-    def place_value(container: NestedType, key: str, val: Any):
-        if key.isdigit():
-            idx = int(key)
-            if not isinstance(container, list):
-                raise ValueError("Expected list for numeric key assignment")
-            while len(container) <= idx:
-                container.append(None)
-            container[idx] = val
-        else:
-            if not isinstance(container, dict):
-                raise ValueError("Expected dict for non-numeric key assignment")
-            container[key] = val
-
-    def get_or_create_child(
-        container: NestedType, key: str, next_is_index: bool
-    ) -> NestedType:
-        if key.isdigit():
-            idx = int(key)
-            if not isinstance(container, list):
-                raise ValueError("Expected list for numeric key path")
-            while len(container) <= idx:
-                container.append([] if next_is_index else {})
-            if container[idx] is None:
-                container[idx] = [] if next_is_index else {}
-            return container[idx]
-        else:
-            if not isinstance(container, dict):
-                raise ValueError("Expected dict for non-numeric key path")
-            return _ensure_container(container, key, next_is_index)
-
     key = parts[0]
     is_last = len(parts) == 1
     next_key = parts[1] if not is_last else None
@@ -105,9 +105,9 @@ def _assign(
 
     if is_last:
         final_value = decode_value(value) if decode_values else value
-        place_value(root, key, final_value)
+        _place_value(root, key, final_value)
     else:
-        child = get_or_create_child(root, key, next_is_index)
+        child = _get_or_create_child(root, key, next_is_index)
         _assign(child, parts[1:], value, decode_values)
 
 
