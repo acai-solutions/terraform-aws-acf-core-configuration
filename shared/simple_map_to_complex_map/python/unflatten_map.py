@@ -94,9 +94,7 @@ def _get_or_create_child(
         return _ensure_container(container, key, next_is_index)
 
 
-def _assign(
-    root: NestedType, parts: Sequence[str], value: Any, decode_values: bool
-):
+def _assign(root: NestedType, parts: Sequence[str], value: Any, decode_values: bool):
     """Recursively assign value into the nested structure based on parts."""
     key = parts[0]
     is_last = len(parts) == 1
