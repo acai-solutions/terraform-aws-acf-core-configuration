@@ -30,7 +30,7 @@ locals {
       "module_provider" = "ACAI GmbH",
       "module_name"     = "terraform-aws-acf-core-configuration",
       "module_source"   = "github.com/acai-consulting/terraform-aws-acf-core-configuration",
-      "module_version"  = /*inject_version_start*/ "1.3.3" /*inject_version_end*/
+      "module_version"  = /*inject_version_start*/ "1.4.2" /*inject_version_end*/
     }
   )
 }

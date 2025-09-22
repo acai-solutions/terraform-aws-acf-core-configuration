@@ -80,7 +80,7 @@ See [LICENSE][license-url] for full details.
 [acai-docs-shield]: https://img.shields.io/badge/documentation-docs.acai.gmbh-CB224B?style=flat
 [acai-url]: https://acai.gmbh
 [acai-docs-url]: https://docs.acai.gmbh
-[module-version-shield]: https://img.shields.io/badge/module_version-1.4.1-CB224B?style=flat
+[module-version-shield]: https://img.shields.io/badge/module_version-1.4.2-CB224B?style=flat
 [terraform-version-shield]: https://img.shields.io/badge/tf-%3E%3D1.3.10-blue.svg?style=flat&color=blueviolet
 [trivy-shield]: https://img.shields.io/badge/trivy-passed-green
 [checkov-shield]: https://img.shields.io/badge/checkov-passed-green
