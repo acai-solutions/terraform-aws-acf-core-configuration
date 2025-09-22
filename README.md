@@ -24,6 +24,8 @@ Later persistence via Amazon DynamoDB or Amazon S3 will be added.
 
 ![architecture][architecture-png]
 
+> **Note:** Python must be installed at the agent.
+
 <!-- FEATURES -->
 ## Features
 
@@ -31,7 +33,6 @@ Later persistence via Amazon DynamoDB or Amazon S3 will be added.
 * Provision writer- and reader-principals (IAM Roles) in the Foundation Configuration Account.
 * Terraform pipelines can write to the Core Configuration via assuming the writer-prinicpal.
 * Terraform pipelines can read from the Core Configuration via assuming the reader-prinicpal.
-
 
 <!-- BEGIN_TF_DOCS -->
 ## Requirements

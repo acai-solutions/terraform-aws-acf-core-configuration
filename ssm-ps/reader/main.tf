@@ -1,29 +1,37 @@
-# ACAI Cloud Foundation (ACF)
-# Copyright (C) 2025 ACAI GmbH
-# Licensed under AGPL v3
-#
-# This file is part of ACAI ACF.
-# Visit https://www.acai.gmbh or https://docs.acai.gmbh for more information.
-# 
-# For full license text, see LICENSE file in repository root.
-# For commercial licensing, contact: contact@acai.gmbh
+# ---------------------------------------------------------------------------------------------------------------------
+# ¦ REQUIREMENTS
+# ---------------------------------------------------------------------------------------------------------------------
+terraform {
+  required_version = ">= 1.3.10"
 
+  required_providers {
+    aws = {
+      source  = "hashicorp/aws"
+      version = ">= 5.0"
+      configuration_aliases = [
+        aws.configuration_reader
+      ]
+    }
+  }
+}
 
 # ---------------------------------------------------------------------------------------------------------------------
 # ¦ CONFIGURATION READER
 # ---------------------------------------------------------------------------------------------------------------------
-data "external" "read_configuration" {
-  program = ["python3", "${path.module}/python/read_from_ssm.py"]
+data "aws_ssm_parameters_by_path" "configuration" {
+  path      = var.parameter_name_prefix
+  recursive = true
+  provider  = aws.configuration_reader
+}
 
-  query = {
-    parameter_name_prefix = var.parameter_name_prefix
-    role_arn              = var.configuration_reader_role_arn
-    aws_region            = var.parameter_aws_region_name
-  }
+data "aws_ssm_parameter" "configuration" {
+  for_each = toset(data.aws_ssm_parameters_by_path.configuration.names)
+  name     = each.value
+  provider = aws.configuration_reader
 }
 
 locals {
-  flat_configuration = data.external.read_configuration.result
+  flat_configuration = { for name, param in data.aws_ssm_parameter.configuration : name => param.value }
 }
 
 # ---------------------------------------------------------------------------------------------------------------------

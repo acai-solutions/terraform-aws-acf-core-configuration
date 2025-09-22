@@ -1,14 +1,3 @@
-# ACAI Cloud Foundation (ACF)
-# Copyright (C) 2025 ACAI GmbH
-# Licensed under AGPL v3
-#
-# This file is part of ACAI ACF.
-# Visit https://www.acai.gmbh or https://docs.acai.gmbh for more information.
-# 
-# For full license text, see LICENSE file in repository root.
-# For commercial licensing, contact: contact@acai.gmbh
-
-
 # ---------------------------------------------------------------------------------------------------------------------
 # ¦ REQUIREMENTS
 # ---------------------------------------------------------------------------------------------------------------------
@@ -41,7 +30,7 @@ locals {
       "module_provider" = "ACAI GmbH",
       "module_name"     = "terraform-aws-acf-core-configuration",
       "module_source"   = "github.com/acai-consulting/terraform-aws-acf-core-configuration",
-      "module_version"  = /*inject_version_start*/ "1.4.1" /*inject_version_end*/
+      "module_version"  = /*inject_version_start*/ "1.3.3" /*inject_version_end*/
     }
   )
 }
