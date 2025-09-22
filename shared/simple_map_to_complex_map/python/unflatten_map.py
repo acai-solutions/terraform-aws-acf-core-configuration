@@ -62,7 +62,6 @@ def _ensure_container(parent: NestedType, key: str, next_is_index: bool) -> Nest
     return parent[key]  # type: ignore[index]
 
 
-
 def _place_value(container: NestedType, key: str, val: Any):
     if key.isdigit():
         idx = int(key)
@@ -75,6 +74,7 @@ def _place_value(container: NestedType, key: str, val: Any):
         if not isinstance(container, dict):
             raise ValueError("Expected dict for non-numeric key assignment")
         container[key] = val
+
 
 def _get_or_create_child(
     container: NestedType, key: str, next_is_index: bool
