@@ -64,7 +64,7 @@ def _ensure_container(parent: NestedType, key: str, next_is_index: bool) -> Nest
 
 def _assign(root: NestedType, parts: Sequence[str], value: Any, decode_values: bool):  # noqa: C901
     """Recursively assign value into the nested structure based on parts."""
-    
+
     def place_value(container: NestedType, key: str, val: Any):
         if key.isdigit():
             idx = int(key)
@@ -78,7 +78,9 @@ def _assign(root: NestedType, parts: Sequence[str], value: Any, decode_values: b
                 raise ValueError("Expected dict for non-numeric key assignment")
             container[key] = val
 
-    def get_or_create_child(container: NestedType, key: str, next_is_index: bool) -> NestedType:
+    def get_or_create_child(
+        container: NestedType, key: str, next_is_index: bool
+    ) -> NestedType:
         if key.isdigit():
             idx = int(key)
             if not isinstance(container, list):
