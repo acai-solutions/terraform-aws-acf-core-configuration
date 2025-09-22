@@ -11,7 +11,11 @@ from typing import Any, Dict, Iterable, Iterator, List, Sequence, Tuple, Union
 
 def is_url_encoded(value: Any) -> bool:
     """Return True if value looks URL encoded."""
-    return isinstance(value, str) and "%" in value and re.search(r"%[0-9A-Fa-f]{2}", value) is not None
+    return (
+        isinstance(value, str)
+        and "%" in value
+        and re.search(r"%[0-9A-Fa-f]{2}", value) is not None
+    )
 
 
 def decode_value(value: Any) -> Any:
@@ -31,7 +35,9 @@ def decode_value(value: Any) -> Any:
 NestedType = Union[Dict[str, Any], List[Any]]
 
 
-def _iter_relevant_items(flattened_map: Dict[str, Any], prefix: Union[str, None], separator: str) -> Iterator[Tuple[str, Any]]:
+def _iter_relevant_items(
+    flattened_map: Dict[str, Any], prefix: Union[str, None], separator: str
+) -> Iterator[Tuple[str, Any]]:
     """Yield key/value pairs filtered & trimmed by prefix."""
     if not prefix:
         for k, v in flattened_map.items():
@@ -48,7 +54,9 @@ def _iter_relevant_items(flattened_map: Dict[str, Any], prefix: Union[str, None]
 def _ensure_container(parent: NestedType, key: str, next_is_index: bool) -> NestedType:
     """Ensure the container for a dict key exists and return it."""
     if isinstance(parent, list):  # list index path handled elsewhere
-        raise ValueError("_ensure_container should not be called with list parent for dict key")
+        raise ValueError(
+            "_ensure_container should not be called with list parent for dict key"
+        )
     if key not in parent:
         parent[key] = [] if next_is_index else {}
     return parent[key]  # type: ignore[index]
@@ -68,7 +76,9 @@ def _assign(root: NestedType, parts: Sequence[str], value: Any, decode_values: b
             while len(target_list) <= int(key):
                 target_list.append(None)
             target_list[int(key)] = final_value
-            if not isinstance(root, list):  # Replace root reference if root was dict placeholder (shouldn't happen normally)
+            if not isinstance(
+                root, list
+            ):  # Replace root reference if root was dict placeholder (shouldn't happen normally)
                 root = target_list  # pragma: no cover - safety fallback
         else:  # dict assignment
             if isinstance(root, list):
@@ -82,7 +92,9 @@ def _assign(root: NestedType, parts: Sequence[str], value: Any, decode_values: b
     if is_index:
         # Ensure root is a list
         if not isinstance(root, list):
-            raise ValueError("List index path encountered but current container is not a list")
+            raise ValueError(
+                "List index path encountered but current container is not a list"
+            )
         # Grow list up to index
         idx = int(key)
         while len(root) <= idx:
@@ -92,7 +104,9 @@ def _assign(root: NestedType, parts: Sequence[str], value: Any, decode_values: b
         _assign(root[idx], parts[1:], value, decode_values)  # type: ignore[index]
     else:  # dict key path
         if isinstance(root, list):
-            raise ValueError("Dict key path encountered but current container is a list")
+            raise ValueError(
+                "Dict key path encountered but current container is a list"
+            )
         child = _ensure_container(root, key, next_is_index)
         _assign(child, parts[1:], value, decode_values)
 
