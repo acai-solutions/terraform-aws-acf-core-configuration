@@ -1,7 +1,7 @@
 import json
+import re
 import sys
 import urllib.parse
-import re
 
 
 def is_url_encoded(value):
