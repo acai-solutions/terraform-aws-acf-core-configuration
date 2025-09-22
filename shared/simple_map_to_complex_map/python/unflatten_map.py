@@ -63,7 +63,9 @@ def _ensure_container(parent: NestedType, key: str, next_is_index: bool) -> Nest
 
 
 # noqa: C901
-def _assign(root: NestedType, parts: Sequence[str], value: Any, decode_values: bool):  
+def _assign(
+    root: NestedType, parts: Sequence[str], value: Any, decode_values: bool
+): 
     """Recursively assign value into the nested structure based on parts."""
 
     def place_value(container: NestedType, key: str, val: Any):
