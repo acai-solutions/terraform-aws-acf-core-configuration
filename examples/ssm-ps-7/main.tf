@@ -65,39 +65,22 @@ data "aws_caller_identity" "current" {}
 locals {
   configuration_add_on = {
     simple_string = "test_value"
-    dict_list = [
-      {
-        name    = "dict1"
-        value   = "value1"
-        enabled = "true"
-      },
-      {
-        name    = "dict2"
-        value   = "value2"
-        enabled = "false"
-        nested = {
-          sub_key = "sub_value"
-        }
-      }
+    string_list = [
+      "item1",
+      "item2",
+      "item3"
     ]
-    mixed_structure = {
-      items = [
-        {
-          id   = "item1"
-          tags = ["production", "critical"]
-        },
-        {
-          id   = "item2"
-          tags = ["development"]
-          config = {
-            timeout = "30"
-            retry   = "true"
-          }
-        }
+    nested_object = {
+      name = "test_nested"
+      tags = [
+        "tag1",
+        "tag2"
       ]
     }
   }
-  parameter_name_prefix = "/test7"
+
+  parameter_name_prefix = "/test6"
+
 }
 
 # ---------------------------------------------------------------------------------------------------------------------
@@ -118,13 +101,23 @@ module "core_configuration_roles" {
 # ---------------------------------------------------------------------------------------------------------------------
 # ¦ CORE CONFIGURATION - WRITER
 # ---------------------------------------------------------------------------------------------------------------------
+provider "aws" {
+  region = "eu-central-1"
+  alias  = "core_configuration_writer"
+  assume_role {
+    role_arn = module.core_configuration_roles.configuration_writer_role_arn
+  }
+}
+
 module "core_configuration_writer" {
   source = "../../ssm-ps/writer"
 
-  configuration_writer_role_arn = module.core_configuration_roles.configuration_writer_role_arn
-  configuration_add_on          = local.configuration_add_on
-  parameter_overwrite           = true
-  parameter_name_prefix         = local.parameter_name_prefix
+  configuration_add_on  = local.configuration_add_on
+  parameter_overwrite   = true
+  parameter_name_prefix = local.parameter_name_prefix
+  providers = {
+    aws.configuration_writer = aws.core_configuration_writer
+  }
   depends_on = [
     module.core_configuration_roles
   ]
@@ -133,11 +126,21 @@ module "core_configuration_writer" {
 # ---------------------------------------------------------------------------------------------------------------------
 # ¦ CORE CONFIGURATION - READER
 # ---------------------------------------------------------------------------------------------------------------------
+provider "aws" {
+  region = "eu-central-1"
+  alias  = "core_configuration_reader"
+  assume_role {
+    role_arn = module.core_configuration_roles.configuration_reader_role_arn
+  }
+}
+
 module "core_configuration_reader" {
   source = "../../ssm-ps/reader"
 
-  configuration_reader_role_arn = module.core_configuration_roles.configuration_reader_role_arn
-  parameter_name_prefix         = local.parameter_name_prefix
+  parameter_name_prefix = local.parameter_name_prefix
+  providers = {
+    aws.configuration_reader = aws.core_configuration_reader
+  }
   depends_on = [
     module.core_configuration_roles,
     module.core_configuration_writer

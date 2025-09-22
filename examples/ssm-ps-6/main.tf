@@ -64,22 +64,55 @@ data "aws_caller_identity" "current" {}
 # ---------------------------------------------------------------------------------------------------------------------
 locals {
   configuration_add_on = {
-    simple_string = "test_value"
-    string_list = [
-      "item1",
-      "item2",
-      "item3"
-    ]
-    nested_object = {
-      name = "test_nested"
-      tags = [
-        "tag1",
-        "tag2"
+    database = {
+      connections = [
+        {
+          name = "primary"
+          host = "db1.example.com"
+          port = "5432"
+          settings = {
+            max_connections = "100"
+            timeout         = "30"
+          }
+          tags = ["production", "primary"]
+        },
+        {
+          name = "secondary"
+          host = "db2.example.com"
+          port = "5432"
+          settings = {
+            max_connections = "50"
+            timeout         = "15"
+            backup_enabled  = "true"
+          }
+          tags = ["production", "backup"]
+        }
+      ]
+    }
+    application = {
+      services = ["api", "worker", "scheduler"]
+      environments = [
+        {
+          name     = "prod"
+          replicas = "3"
+          resources = {
+            cpu    = "2"
+            memory = "4Gi"
+          }
+        },
+        {
+          name     = "staging"
+          replicas = "1"
+          resources = {
+            cpu    = "1"
+            memory = "2Gi"
+          }
+        }
       ]
     }
   }
 
-  parameter_name_prefix = "/test6"
+  parameter_name_prefix = "/test5"
 
 }
 
@@ -101,13 +134,23 @@ module "core_configuration_roles" {
 # ---------------------------------------------------------------------------------------------------------------------
 # ¦ CORE CONFIGURATION - WRITER
 # ---------------------------------------------------------------------------------------------------------------------
+provider "aws" {
+  region = "eu-central-1"
+  alias  = "core_configuration_writer"
+  assume_role {
+    role_arn = module.core_configuration_roles.configuration_writer_role_arn
+  }
+}
+
 module "core_configuration_writer" {
   source = "../../ssm-ps/writer"
 
-  configuration_writer_role_arn = module.core_configuration_roles.configuration_writer_role_arn
-  configuration_add_on          = local.configuration_add_on
-  parameter_overwrite           = true
-  parameter_name_prefix         = local.parameter_name_prefix
+  configuration_add_on  = local.configuration_add_on
+  parameter_overwrite   = true
+  parameter_name_prefix = local.parameter_name_prefix
+  providers = {
+    aws.configuration_writer = aws.core_configuration_writer
+  }
   depends_on = [
     module.core_configuration_roles
   ]
@@ -116,12 +159,21 @@ module "core_configuration_writer" {
 # ---------------------------------------------------------------------------------------------------------------------
 # ¦ CORE CONFIGURATION - READER
 # ---------------------------------------------------------------------------------------------------------------------
+provider "aws" {
+  region = "eu-central-1"
+  alias  = "core_configuration_reader"
+  assume_role {
+    role_arn = module.core_configuration_roles.configuration_reader_role_arn
+  }
+}
+
 module "core_configuration_reader" {
   source = "../../ssm-ps/reader"
 
-  configuration_reader_role_arn = module.core_configuration_roles.configuration_reader_role_arn
-  parameter_name_prefix         = local.parameter_name_prefix
-
+  parameter_name_prefix = local.parameter_name_prefix
+  providers = {
+    aws.configuration_reader = aws.core_configuration_reader
+  }
   depends_on = [
     module.core_configuration_roles,
     module.core_configuration_writer

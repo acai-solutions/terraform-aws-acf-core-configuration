@@ -113,15 +113,25 @@ module "core_configuration_roles" {
 # ---------------------------------------------------------------------------------------------------------------------
 # ¦ CORE CONFIGURATION - WRITER
 # ---------------------------------------------------------------------------------------------------------------------
+provider "aws" {
+  region = "eu-central-1"
+  alias  = "core_configuration_writer"
+  assume_role {
+    role_arn = module.core_configuration_roles.configuration_writer_role_arn
+  }
+}
+
 module "core_configuration_writer" {
   source = "../../ssm-ps/writer"
 
-  configuration_writer_role_arn = module.core_configuration_roles.configuration_writer_role_arn
   configuration_add_on_list = [
     local.configuration_add_on
   ]
   parameter_overwrite   = true
   parameter_name_prefix = local.parameter_name_prefix
+  providers = {
+    aws.configuration_writer = aws.core_configuration_writer
+  }
   depends_on = [
     module.core_configuration_roles
   ]
@@ -141,9 +151,10 @@ provider "aws" {
 module "core_configuration_reader" {
   source = "../../ssm-ps/reader"
 
-  configuration_reader_role_arn = module.core_configuration_roles.configuration_reader_role_arn
-  parameter_name_prefix         = local.parameter_name_prefix
-
+  parameter_name_prefix = local.parameter_name_prefix
+  providers = {
+    aws.configuration_reader = aws.core_configuration_reader
+  }
   depends_on = [
     module.core_configuration_roles,
     module.core_configuration_writer
