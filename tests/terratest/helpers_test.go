@@ -12,9 +12,14 @@ import (
 )
 
 // runRoundTripExample is the shared driver for all ssm-ps-N tests. It deploys the named example in
-// two stages -- IAM roles first (their ARNs feed the writer / reader provider blocks), then the full
-// stack -- and asserts that the example's `test_success` output evaluates to "true", which signals
-// the writer -> SSM -> reader round-trip reproduced the original HCL configuration.
+// three stages -- IAM roles (their ARNs feed the writer / reader provider blocks), then the writer
+// (so the SSM parameters exist before the reader plans), then the full stack -- and asserts the
+// example's `test_success` output evaluates to "true", which signals the writer -> SSM -> reader
+// round-trip reproduced the original HCL configuration.
+//
+// The intermediate writer-only stage is required because the reader's
+// `data.aws_ssm_parameters_by_path` returns names that are unknown at plan time until the writer's
+// `aws_ssm_parameter` resources actually exist in the parameter store.
 func runRoundTripExample(t *testing.T, exampleName string) {
 	t.Helper()
 	t.Logf("Starting Terratest for examples/%s", exampleName)
@@ -23,32 +28,33 @@ func runRoundTripExample(t *testing.T, exampleName string) {
 	stateKey := "terratest/terraform-aws-acf-core-configuration-" + exampleName + ".tfstate"
 	backendConfig := loadBackendConfig(t, stateKey)
 
-	prep := &terraform.Options{
-		TerraformBinary: getHclBinary(),
-		TerraformDir:    terraformDir,
-		NoColor:         false,
-		Lock:            true,
-		BackendConfig:   backendConfig,
-		Reconfigure:     true,
-		Targets: []string{
-			"module.core_configuration_roles",
-		},
+	common := func(targets ...string) *terraform.Options {
+		o := &terraform.Options{
+			TerraformBinary: getHclBinary(),
+			TerraformDir:    terraformDir,
+			NoColor:         false,
+			Lock:            true,
+			BackendConfig:   backendConfig,
+			Reconfigure:     true,
+		}
+		if len(targets) > 0 {
+			o.Targets = targets
+		}
+		return o
 	}
-	defer terraform.Destroy(t, prep)
-	terraform.InitAndApply(t, prep)
 
-	mod := &terraform.Options{
-		TerraformBinary: getHclBinary(),
-		TerraformDir:    terraformDir,
-		NoColor:         false,
-		Lock:            true,
-		BackendConfig:   backendConfig,
-		Reconfigure:     true,
-	}
-	defer terraform.Destroy(t, mod)
-	terraform.InitAndApply(t, mod)
+	roles := common("module.core_configuration_roles")
+	defer terraform.Destroy(t, roles)
+	terraform.InitAndApply(t, roles)
 
-	got := outputClean(t, mod, "test_success")
+	writer := common("module.core_configuration_roles", "module.core_configuration_writer")
+	terraform.InitAndApply(t, writer)
+
+	full := common()
+	defer terraform.Destroy(t, full)
+	terraform.InitAndApply(t, full)
+
+	got := outputClean(t, full, "test_success")
 	t.Logf("test_success: %s", got)
 	assert.Equal(t, "true", got, "round-trip mismatch for %s", exampleName)
 }
