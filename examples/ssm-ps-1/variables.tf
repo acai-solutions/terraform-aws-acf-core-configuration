@@ -43,3 +43,9 @@ variable "iam_role_name" {
   description = "IAM role assumed in each member account."
   default     = "OrganizationAccountAccessRole"
 }
+
+variable "aws_endpoint_domain" {
+  type        = string
+  description = "AWS endpoint domain (testbed-supplied; not consumed by these examples)."
+  default     = null
+}

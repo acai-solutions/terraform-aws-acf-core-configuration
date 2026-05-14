@@ -17,7 +17,7 @@
 module "core_configuration_roles" {
   source = "../../ssm-ps/iam-roles"
 
-  trusted_account_ids   = [var.account_ids.workload]
+  trusted_account_ids   = [var.account_ids.org_mgmt]
   parameter_name_prefix = local.parameter_name_prefix
   iam_roles = {
     configuration_reader_role_name = "acf-core-configuration-reader-role-test1"
