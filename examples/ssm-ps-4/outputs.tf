@@ -4,18 +4,22 @@
 #
 # This file is part of ACAI ACF.
 # Visit https://www.acai.gmbh or https://docs.acai.gmbh for more information.
-# 
+#
 # For full license text, see LICENSE file in repository root.
 # For commercial licensing, contact: contact@acai.gmbh
 
 
 output "test_success" {
-  description = "Are local.configuration_add_on similar to the read configuration?"
-  value       = local.configuration_add_on == module.core_configuration_reader.unflattened_configuration
-
+  description = "Round-trip: reader's unflattened map equals the original input (canonical-JSON compare)."
+  value       = jsonencode(module.core_configuration_reader.unflattened_configuration) == jsonencode(local.configuration_add_on)
 }
 
 output "core_configuration_reader" {
-  description = "Read configuration"
+  description = "Read-back configuration (debugging aid)."
   value       = module.core_configuration_reader.unflattened_configuration
+}
+
+output "max_depth_reached" {
+  description = "Deepest path length encountered in the flattened map (sanity check that the 15-pass ladder was actually exercised)."
+  value       = max([for k in keys(module.core_configuration_writer.flattened_configuration_add_on) : length(split("/", k))]...)
 }
