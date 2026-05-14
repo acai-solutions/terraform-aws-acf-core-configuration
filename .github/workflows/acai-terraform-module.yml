@@ -11,12 +11,16 @@ on:
 
 jobs:
   tf_module_checks:
-    uses: acai-solutions/github-workflows/.github/workflows/checks-py-tf-module.yml@main
-    if: ${{ github.event_name == 'pull_request' }}
+    uses: acai-solutions/github-workflows/.github/workflows/checks-hcl-module.yml@main
+    if: ${{ github.event_name == 'pull_request' || endsWith(github.ref_name, '_ai') }}
+    with:
+      hcl_docs_skip: false
+      hcl_test_beds: '["AWS", "AWS_ESC"]'
+      hcl_test_bed_aws_terratest_configs: '["aws/matrix_tf1x5x7_aws6x0x0.json", "aws/matrix_ofu1x6x0_aws6x0x0.json"]'
+      hcl_test_bed_aws_esc_terratest_configs: '["aws/matrix_tf1x5x7_aws6x0x0.json", "aws/matrix_ofu1x6x0_aws6x0x0.json"]'
     secrets: inherit
 
-    
   tf_module_release:
-    uses: acai-solutions/github-workflows/.github/workflows/tf-module-release.yml@main
+    uses: acai-solutions/github-workflows/.github/workflows/hcl-module-release.yml@main
     if: ${{ github.event_name == 'push' }}
     secrets: inherit

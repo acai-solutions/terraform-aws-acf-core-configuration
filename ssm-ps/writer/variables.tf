@@ -27,6 +27,24 @@ variable "parameter_name_prefix" {
   default     = "/foundation"
 }
 
+variable "list_strategy" {
+  description = <<-EOT
+    How list values inside `configuration_add_on` are stored:
+      * "json"    => the whole list is stored as a single JSON-encoded SSM parameter under the parent key.
+                     Recommended default: makes the reader's unflatten round-trip into real HCL lists
+                     (jsondecode is applied to every leaf).
+      * "indexed" => one SSM parameter per element, key suffixed with the numeric index ("key/0", "key/1", ...).
+                     The reader will return numeric-keyed maps for these branches, NOT lists.
+  EOT
+  type        = string
+  default     = "json"
+
+  validation {
+    condition     = contains(["indexed", "json"], var.list_strategy)
+    error_message = "list_strategy must be either \"indexed\" or \"json\"."
+  }
+}
+
 variable "kms_key_arn" {
   description = "KMS Key to be used to encrypt the SSM Parameter Store entries."
   type        = string

@@ -2,7 +2,7 @@
 # ¦ REQUIREMENTS
 # ---------------------------------------------------------------------------------------------------------------------
 terraform {
-  required_version = ">= 1.3.10"
+  required_version = ">= 1.5.0"
 
   required_providers {
     aws = {
@@ -39,6 +39,7 @@ module "complex_map_to_simple_map" {
 
   configuration_add_on = var.configuration_add_on
   prefix               = var.parameter_name_prefix
+  list_strategy        = var.list_strategy
 }
 
 module "complex_maps_to_simple_maps" {
@@ -47,6 +48,7 @@ module "complex_maps_to_simple_maps" {
 
   configuration_add_on = each.value
   prefix               = var.parameter_name_prefix
+  list_strategy        = var.list_strategy
 }
 
 locals {
